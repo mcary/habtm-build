@@ -1,3 +1,4 @@
 class Foo < ActiveRecord::Base
-  has_and_belongs_to_many :foo_items
+  has_many :foo_item_foos
+  has_many :foo_items, through: :foo_item_foos
 end
