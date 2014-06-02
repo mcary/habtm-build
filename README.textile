@@ -1,0 +1,49 @@
+h1. Building with @has_and_belongs_to_many@
+
+h2. The Issue
+
+I'm trying to make "inherited_resources":https://github.com/josevalim/inherited_resources work with a nested @has_and_belongs_to_many@ resource.
+
+It seemed like it should "Just Work" with the out-of-box Rails model, but I found that building the associated resource did not setup its parent to be associated when saving.
+
+In other words, this code:
+
+<pre><code>foo = Foo.create!(name: "Test foo")
+foo_item = foo.foo_items.build(name: "Test foo item")
+foo_item.save!
+</code></pre>
+
+... resulted in @foo_item.foos@ being empty.  I expected creation via @foo.foo_items@ to result in the new @foo_item@ to be linked to the parent foo.
+
+h2. The Solution(s)
+
+This project documents several approaches I took to try to address the problem, including two that work, and one that works with inherited_resources.
+
+Working Solutions:
+
+* Extend the association to hook up the inverse association in @#build@ (See "override-build branch":https://github.com/mcary/habtm-build/tree/override-build)
+* Save the parent resource instead of the target/child resource, which isn't entirely compatible with inherited_resources (See "save-parent branch":https://github.com/mcary/habtm-build/tree/save-parent)
+
+Non-working Solutions:
+
+* Configuring the @inverse_of@ the association, which is disallowed by ActiveRecord (See "inverse-of branch":https://github.com/mcary/habtm-build/tree/inverse-of)
+* Upgrading to Rails 4.1, which just doesn't help (See "upgrade-to-rails-4.1 branch":https://github.com/mcary/habtm-build/tree/upgrade-to-rails-4.1)
+* Using @has_many :through@ instead of habtm, which also just doesn't help (See "has-many-through branch":https://github.com/mcary/habtm-build/tree/has-many-through)
+
+I chose the first working solution (override-build) because it dovetails most neatly with inherited_resources's @begin_of_association_chain@ API.
+
+(The last commit on each branch shows the attempted remedy, and for failures, the error message output.)
+
+h2. Remaining Questions
+
+I don't understand why Rails doesn't implement the expected behavior.  Is it an intentional limitation -- something that is dangerous or undesirable in ways I just haven't thought of yet?  Or is it just a feature not one's taken the time to implement yet?
+
+h2. Running
+
+To see these examples in action, run these specs like usual in a Rails project:
+
+* bundle install
+* rake db:test:prepare
+* rake spec
+
+Note that in switching branches you may need to re-run db:test:prepare, as different branches may have different schemas.
